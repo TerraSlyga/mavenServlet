@@ -1,5 +1,6 @@
 package org.example.web;
 
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -7,6 +8,7 @@ import org.example.db.CommentDao;
 
 import java.io.IOException;
 
+@MultipartConfig
 public class CommentsServlet extends HttpServlet {
     private final CommentDao dao = new CommentDao();
     private final com.fasterxml.jackson.databind.ObjectMapper om =
