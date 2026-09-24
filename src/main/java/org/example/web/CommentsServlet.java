@@ -5,12 +5,15 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.db.CommentDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 @MultipartConfig
 public class CommentsServlet extends HttpServlet {
     private final CommentDao dao = new CommentDao();
+    private static final Logger log = LoggerFactory.getLogger(CommentsServlet.class);
     private final com.fasterxml.jackson.databind.ObjectMapper om =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
@@ -46,6 +49,8 @@ public class CommentsServlet extends HttpServlet {
 
         try {
             dao.add(author.trim(), text.trim());
+            log.info("Новий коментар успішно додано. Автор: {}, довжина тексту: {}", author.trim(), text.trim().length());
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
             resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
         } catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DB error");
