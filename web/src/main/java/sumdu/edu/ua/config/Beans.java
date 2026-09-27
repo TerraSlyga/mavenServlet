@@ -9,15 +9,13 @@ import sumdu.edu.ua.persistence.jdbc.JdbcCommentRepository;
 
 public class Beans {
 
-    public static void init() {
-        DbInit.init(); // schema.sql
-
-        var repo = new JdbcCommentRepository();
-        CommentService commentService = new CommentService(repo);
-    }
-
     private static final CatalogRepositoryPort bookRepo = new JdbcBookRepository();
     private static final CommentRepositoryPort commentRepo = new JdbcCommentRepository();
+    private static final CommentService commentService = new CommentService(commentRepo);
+
+    public static void init() {
+        DbInit.init(); // schema.sql
+    }
 
     public static CatalogRepositoryPort getBookRepo() {
         return bookRepo;
@@ -25,5 +23,9 @@ public class Beans {
 
     public static CommentRepositoryPort getCommentRepo() {
         return commentRepo;
+    }
+
+    public static CommentService getCommentService() {
+        return commentService;
     }
 }
