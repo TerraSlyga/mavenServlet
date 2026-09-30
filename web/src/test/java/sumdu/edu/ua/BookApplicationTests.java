@@ -1,5 +1,6 @@
 package sumdu.edu.ua;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,8 @@ import sumdu.edu.ua.persistence.jdbc.JdbcCommentRepository;
 import sumdu.edu.ua.web.BookController;
 import sumdu.edu.ua.web.CommentController;
 import sumdu.edu.ua.web.RootController;
+
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -127,15 +130,89 @@ class BookApplicationTests {
     }
 
     @Test
-    @DisplayName("Spring MVC: GET /books повертає список книг у форматі JSON")
-    void testGetBooksReturnsJsonList() throws Exception {
+    @DisplayName("Thymeleaf MVC: GET /books повертає представлення books та додає атрибут books у модель")
+    void testGetBooksReturnsBooksView() throws Exception {
         bookService.add("Effective Java", "Joshua Bloch", 2018);
 
         mockMvc.perform(get("/books"))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].title").exists());
+                .andExpect(view().name("books"))
+                .andExpect(model().attributeExists("books"))
+                .andExpect(content().string(Matchers.containsString("Effective Java")));
+    }
+
+    @Test
+    @DisplayName("Thymeleaf MVC: GET /books/add повертає представлення book-form з атрибутом моделі book")
+    void testShowAddBookForm() throws Exception {
+        mockMvc.perform(get("/books/add"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("book-form"))
+                .andExpect(model().attributeExists("book"))
+                .andExpect(content().string(Matchers.containsString("action=\"/books/add\"")))
+                .andExpect(content().string(Matchers.containsString("name=\"title\"")))
+                .andExpect(content().string(Matchers.containsString("name=\"author\"")))
+                .andExpect(content().string(Matchers.containsString("name=\"pubYear\"")));
+    }
+
+    @Test
+    @DisplayName("Thymeleaf MVC: POST /books/add успішно створює книгу та перенаправляє на /books")
+    void testAddBookFormPostRedirects() throws Exception {
+        mockMvc.perform(post("/books/add")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("title", "Clean Architecture Thymeleaf")
+                        .param("author", "Robert Martin")
+                        .param("pubYear", "2017"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/books"));
+
+        var searchResult = bookService.search("Clean Architecture Thymeleaf", new sumdu.edu.ua.core.domain.PageRequest(0, 10));
+        assertFalse(searchResult.getItems().isEmpty());
+        assertEquals("Robert Martin", searchResult.getItems().get(0).getAuthor());
+    }
+
+    @Test
+    @DisplayName("Thymeleaf MVC: умовний елемент 'Немає книг' при відсутності результатів")
+    void testThymeleafEmptyListMessage() throws Exception {
+        mockMvc.perform(get("/books")
+                        .param("q", "NonExistentSearchStringXYZ123456789")
+                        .locale(new Locale("uk")))
+                .andExpect(status().isOk())
+                .andExpect(view().name("books"))
+                .andExpect(content().string(Matchers.containsString("Немає книг")));
+    }
+
+    @Test
+    @DisplayName("i18n: зміна мови через Accept-Language header (uk / en)")
+    void testLocalizationWithAcceptLanguage() throws Exception {
+        // Українська локалізація
+        mockMvc.perform(get("/books")
+                        .header("Accept-Language", "uk"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("Список книг")))
+                .andExpect(content().string(Matchers.containsString("Додати нову книгу")));
+
+        // Англійська локалізація
+        mockMvc.perform(get("/books")
+                        .header("Accept-Language", "en"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("Books List")))
+                .andExpect(content().string(Matchers.containsString("Add new book")));
+    }
+
+    @Test
+    @DisplayName("i18n: зміна мови форми через параметр ?lang=en та ?lang=uk")
+    void testFormLocalizationWithQueryParam() throws Exception {
+        // Англійська мова для форми
+        mockMvc.perform(get("/books/add").param("lang", "en"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("Add New Book")))
+                .andExpect(content().string(Matchers.containsString("Add Book")));
+
+        // Українська мова для форми
+        mockMvc.perform(get("/books/add").param("lang", "uk"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("Додавання нової книги")))
+                .andExpect(content().string(Matchers.containsString("Додати книгу")));
     }
 
     @Test

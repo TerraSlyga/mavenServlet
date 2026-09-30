@@ -1,13 +1,35 @@
 ### 1. Перевірка кореневого ендпоінту
 GET http://localhost:8080/
 
-### 2. Відкриття /books - повертає список книг у форматі JSON
+### 2. Відображення списку книг через Thymeleaf (HTML-сторінка, типова мова)
 GET http://localhost:8080/books
 
-### 3. Відкриття /books/{id} - повертає дані однієї книги з коментарями
+### 3. Відображення списку книг англійською мовою (параметр ?lang=en)
+GET http://localhost:8080/books?lang=en
+
+### 4. Відображення списку книг через заголовок Accept-Language: en
+GET http://localhost:8080/books
+Accept-Language: en
+
+### 5. Відображення форми додавання книги (/books/add)
+GET http://localhost:8080/books/add
+
+### 6. Відображення форми додавання книги англійською мовою (/books/add?lang=en)
+GET http://localhost:8080/books/add?lang=en
+
+### 7. Додавання книги через HTML-форму (application/x-www-form-urlencoded)
+POST http://localhost:8080/books/add
+Content-Type: application/x-www-form-urlencoded
+
+title=Domain-Driven+Design&author=Eric+Evans&pubYear=2003
+
+### 8. Перевірка умовного повідомлення "Немає книг" (th:if при відсутності результатів)
+GET http://localhost:8080/books?q=NonExistentBookQueryXYZ123
+
+### 9. Відкриття /books/{id} - повертає дані книги з коментарями (JSON)
 GET http://localhost:8080/books/1
 
-### 4. Відправлення POST-запиту /comments - додає новий відгук (JSON)
+### 10. Відправлення POST-запиту /comments - додає новий відгук (JSON)
 POST http://localhost:8080/comments
 Content-Type: application/json
 
@@ -17,7 +39,7 @@ Content-Type: application/json
   "text": "Чудова книга для початківців та спеціалістів!"
 }
 
-### 5. Відправлення POST-запиту /comments з помилкою валідації (порожні поля)
+### 11. Відправлення POST-запиту /comments з помилкою валідації (порожні поля)
 POST http://localhost:8080/comments
 Content-Type: application/json
 
@@ -27,8 +49,8 @@ Content-Type: application/json
   "text": " "
 }
 
-### 6. Створення нової книги через POST /books
-POST http://localhost:8080/books
+### 12. Створення нової книги через JSON REST API
+POST http://localhost:8080/api/books
 Content-Type: application/json
 
 {
@@ -37,23 +59,13 @@ Content-Type: application/json
   "pubYear": 2008
 }
 
-### 7. Створення книги з помилкою валідації (порожній title, некоректний pubYear)
-POST http://localhost:8080/books
-Content-Type: application/json
-
-{
-  "title": "",
-  "author": "Anonymous",
-  "pubYear": -5
-}
-
-### 8. Отримання списку книг з пагінацією та пошуком (REST API)
+### 13. Отримання списку книг з пагінацією та пошуком (REST API)
 GET http://localhost:8080/api/books?page=0&size=10&q=Clean
 
-### 9. Отримання коментарів до книги
+### 14. Отримання коментарів до книги через REST API
 GET http://localhost:8080/api/books/1/comments?page=0&size=5
 
-### 10. Додавання коментаря через REST ендпоінт
+### 15. Додавання коментаря через REST ендпоінт
 POST http://localhost:8080/api/books/1/comments
 Content-Type: application/json
 
@@ -62,5 +74,5 @@ Content-Type: application/json
   "text": "Обов'язково до прочитання кожному розробнику!"
 }
 
-### 11. Видалення коментаря за id
+### 16. Видалення коментаря за id
 DELETE http://localhost:8080/api/books/1/comments/1

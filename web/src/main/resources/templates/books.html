@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{books.title}">Список книг</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .main-header { margin-bottom: 20px; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; }
+        .nav-links a, .lang-switcher a { margin: 0 5px; text-decoration: none; color: #0066cc; }
+        .nav-links a:hover, .lang-switcher a:hover { text-decoration: underline; }
+        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .empty-message { padding: 15px; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 4px; margin-top: 15px; }
+        .btn-add { display: inline-block; margin-top: 15px; padding: 8px 16px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; }
+        .btn-add:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <div th:replace="fragments/header :: header"></div>
+
+    <h2 th:text="#{books.title}">Список книг</h2>
+
+    <!-- Повідомлення "Немає книг", якщо колекція порожня -->
+    <div th:if="${#lists.isEmpty(books)}" class="empty-message" id="empty-message" th:text="#{books.empty}">
+        Немає книг
+    </div>
+
+    <!-- Таблиця книг, якщо колекція не порожня -->
+    <table th:unless="${#lists.isEmpty(books)}" id="books-table">
+        <thead>
+            <tr>
+                <th th:text="#{books.table.id}">ID</th>
+                <th th:text="#{books.table.title}">Назва</th>
+                <th th:text="#{books.table.author}">Автор</th>
+                <th th:text="#{books.table.year}">Рік видання</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="book : ${books}">
+                <td th:text="${book.id}">1</td>
+                <td th:text="${book.title}">Sample Title</td>
+                <td th:text="${book.author}">Sample Author</td>
+                <td th:text="${book.pubYear}">2024</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div>
+        <a th:href="@{/books/add}" class="btn-add" th:text="#{books.add.button}">Додати нову книгу</a>
+    </div>
+</body>
+</html>

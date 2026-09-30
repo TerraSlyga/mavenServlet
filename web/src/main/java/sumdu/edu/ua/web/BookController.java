@@ -3,7 +3,10 @@ package sumdu.edu.ua.web;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import sumdu.edu.ua.core.domain.Book;
 import sumdu.edu.ua.core.domain.Comment;
@@ -13,14 +16,14 @@ import sumdu.edu.ua.core.service.BookService;
 import sumdu.edu.ua.core.service.CommentService;
 import sumdu.edu.ua.web.dto.BookWithCommentsDto;
 
-import java.util.List;
 import java.util.Map;
 
 /**
- * Spring MVC REST контролер для операцій з книгами.
- * Замінює застарілі BooksServlet та BooksApiServlet.
+ * Spring MVC контролер для операцій з книгами.
+ * Повертає імена представлень Thymeleaf для веб-інтерфейсу
+ * та підтримує REST ендпоінти.
  */
-@RestController
+@Controller
 public class BookController {
 
     private final BookService bookService;
@@ -43,14 +46,15 @@ public class BookController {
     }
 
     /**
-     * Повертає список книг у форматі JSON.
+     * Відображення списку книг через HTML-шаблон Thymeleaf.
      * Маршрут: GET /books
      */
     @GetMapping("/books")
-    public ResponseEntity<List<Book>> getBooksList(
+    public String getBooksList(
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "20") int size) {
+            @RequestParam(name = "size", defaultValue = "50") int size,
+            Model model) {
 
         if (page < 0) {
             throw new IllegalArgumentException("Parameter 'page' cannot be negative");
@@ -60,7 +64,46 @@ public class BookController {
         }
 
         Page<Book> result = bookService.search(q, new PageRequest(page, size));
-        return ResponseEntity.ok(result.getItems());
+        model.addAttribute("books", result.getItems());
+        return "books";
+    }
+
+    /**
+     * Відображення форми додавання книги через HTML-шаблон Thymeleaf.
+     * Маршрут: GET /books/add
+     */
+    @GetMapping("/books/add")
+    public String showAddBookForm(Model model) {
+        model.addAttribute("book", new Book());
+        return "book-form";
+    }
+
+    /**
+     * Обробка форми додавання книги.
+     * Маршрут: POST /books/add
+     */
+    @PostMapping("/books/add")
+    public String addBook(@ModelAttribute("book") Book book) {
+        if (book.getTitle() == null || book.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Field 'title' is required and cannot be blank");
+        }
+        if (book.getAuthor() == null || book.getAuthor().trim().isEmpty()) {
+            throw new IllegalArgumentException("Field 'author' is required and cannot be blank");
+        }
+        if (book.getPubYear() < 0) {
+            throw new IllegalArgumentException("Field 'pubYear' cannot be negative");
+        }
+
+        bookService.add(book.getTitle().trim(), book.getAuthor().trim(), book.getPubYear());
+        return "redirect:/books";
+    }
+
+    /**
+     * Обробка форми додавання книги через POST /books (form-urlencoded).
+     */
+    @PostMapping(value = "/books", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String addBookFormSubmit(@ModelAttribute("book") Book book) {
+        return addBook(book);
     }
 
     /**
@@ -68,6 +111,7 @@ public class BookController {
      * Маршрут: GET /books/{id}
      */
     @GetMapping("/books/{id}")
+    @ResponseBody
     public ResponseEntity<?> getBookWithComments(@PathVariable("id") long id) {
         if (id <= 0) {
             throw new IllegalArgumentException("Book ID must be greater than 0");
@@ -87,10 +131,11 @@ public class BookController {
     }
 
     /**
-     * Пошук книг з пагінацією.
+     * Пошук книг з пагінацією (REST API).
      * Маршрут: GET /api/books
      */
     @GetMapping("/api/books")
+    @ResponseBody
     public ResponseEntity<Page<Book>> searchBooks(
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "page", defaultValue = "0") int page,
@@ -110,10 +155,11 @@ public class BookController {
     }
 
     /**
-     * Отримання книги за ID.
+     * Отримання книги за ID (REST API).
      * Маршрут: GET /api/books/{id}
      */
     @GetMapping("/api/books/{id}")
+    @ResponseBody
     public ResponseEntity<?> getBookById(@PathVariable("id") long id) {
         if (id <= 0) {
             throw new IllegalArgumentException("Book ID must be greater than 0");
@@ -131,11 +177,12 @@ public class BookController {
     }
 
     /**
-     * Створення нової книги.
+     * Створення нової книги через JSON REST API.
      * Маршрути: POST /books та POST /api/books
      */
-    @PostMapping({"/books", "/api/books"})
-    public ResponseEntity<?> createBook(@RequestBody BookRequest request) {
+    @PostMapping(value = {"/books", "/api/books"}, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<?> createBookJson(@RequestBody BookRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Request body cannot be null");
         }
