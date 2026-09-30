@@ -13,33 +13,67 @@ import java.time.Instant;
 @Service
 public class CommentService {
 
-    // Демонстрація ін'єкції залежностей через поле (Field Injection)
-    @Autowired
-    private CommentRepositoryPort repo;
+    private final CommentRepositoryPort repo;
 
     public CommentService() {
+        this.repo = null;
     }
 
+    @Autowired
     public CommentService(CommentRepositoryPort repo) {
         this.repo = repo;
     }
 
     public void addComment(long bookId, String author, String text) {
-        repo.add(bookId, author, text);
+        if (bookId <= 0) {
+            throw new IllegalArgumentException("Book ID must be greater than 0: " + bookId);
+        }
+        if (author == null || author.isBlank()) {
+            throw new IllegalArgumentException("Field 'author' is required and cannot be blank");
+        }
+        if (text == null || text.isBlank()) {
+            throw new IllegalArgumentException("Field 'text' is required and cannot be blank");
+        }
+        getRepo().add(bookId, author.trim(), text.trim());
     }
 
     public Page<Comment> listComments(long bookId, String author, Instant since, PageRequest request) {
-        return repo.list(bookId, author, since, request);
+        if (bookId <= 0) {
+            throw new IllegalArgumentException("Book ID must be greater than 0: " + bookId);
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("PageRequest cannot be null");
+        }
+        if (request.getPage() < 0) {
+            throw new IllegalArgumentException("Parameter 'page' cannot be negative");
+        }
+        if (request.getSize() <= 0) {
+            throw new IllegalArgumentException("Parameter 'size' must be greater than 0");
+        }
+        return getRepo().list(bookId, author, since, request);
     }
 
     public void delete(long bookId, long commentId) {
-        repo.delete(bookId, commentId);
+        if (bookId <= 0) {
+            throw new IllegalArgumentException("Book ID must be greater than 0: " + bookId);
+        }
+        if (commentId <= 0) {
+            throw new IllegalArgumentException("Comment ID must be greater than 0: " + commentId);
+        }
+        getRepo().delete(bookId, commentId);
     }
 
     public void delete(long bookId, long commentId, Instant createdAt) {
+        delete(bookId, commentId);
         if (createdAt != null && Duration.between(createdAt, Instant.now()).toHours() > 24) {
             throw new IllegalStateException("Comment too old to delete");
         }
-        repo.delete(bookId, commentId);
+    }
+
+    private CommentRepositoryPort getRepo() {
+        if (repo == null) {
+            throw new IllegalStateException("CommentRepositoryPort is not injected");
+        }
+        return repo;
     }
 }
