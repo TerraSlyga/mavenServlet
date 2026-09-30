@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import sumdu.edu.ua.config.AppConfig;
 import sumdu.edu.ua.config.AppInfoComponent;
 import sumdu.edu.ua.config.CustomInfoService;
+import sumdu.edu.ua.config.WebConfig;
 import sumdu.edu.ua.core.port.CatalogRepositoryPort;
 import sumdu.edu.ua.core.port.CommentRepositoryPort;
 import sumdu.edu.ua.core.service.BookService;
@@ -71,9 +72,11 @@ class BookApplicationTests {
         assertNotNull(context.getBean(DatabaseInitializer.class));
         assertNotNull(context.getBean(AppInfoComponent.class));
 
-        // 4. @Configuration клас
+        // 4. @Configuration класи
         assertTrue(context.containsBean("appConfig"), "AppConfig (@Configuration) повинен бути в контексті");
+        assertTrue(context.containsBean("webConfig"), "WebConfig (@Configuration, @EnableWebMvc) повинен бути в контексті");
         assertNotNull(context.getBean(AppConfig.class));
+        assertNotNull(context.getBean(WebConfig.class));
 
         // 5. Кастомний @Bean
         assertTrue(context.containsBean("customInfoService"), "CustomInfoService (кастомний @Bean) повинен бути в контексті");
@@ -124,7 +127,112 @@ class BookApplicationTests {
     }
 
     @Test
-    @DisplayName("REST API: повний життєвий цикл книги та коментарів")
+    @DisplayName("Spring MVC: GET /books повертає список книг у форматі JSON")
+    void testGetBooksReturnsJsonList() throws Exception {
+        bookService.add("Effective Java", "Joshua Bloch", 2018);
+
+        mockMvc.perform(get("/books"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].title").exists());
+    }
+
+    @Test
+    @DisplayName("Spring MVC: GET /books/{id} повертає дані однієї книги з коментарями")
+    void testGetBookByIdReturnsBookWithComments() throws Exception {
+        var book = bookService.add("Clean Architecture", "Robert C. Martin", 2017);
+        commentService.addComment(book.getId(), "Alex", "Top architecture insights!");
+
+        mockMvc.perform(get("/books/" + book.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(book.getId()))
+                .andExpect(jsonPath("$.title").value("Clean Architecture"))
+                .andExpect(jsonPath("$.author").value("Robert C. Martin"))
+                .andExpect(jsonPath("$.pubYear").value(2017))
+                .andExpect(jsonPath("$.comments").isArray())
+                .andExpect(jsonPath("$.comments[0].author").value("Alex"))
+                .andExpect(jsonPath("$.comments[0].text").value("Top architecture insights!"));
+    }
+
+    @Test
+    @DisplayName("Spring MVC: POST /comments додає новий відгук до книги")
+    void testPostCommentEndpoint() throws Exception {
+        var book = bookService.add("Refactoring", "Martin Fowler", 2018);
+
+        String commentJson = String.format("""
+                {
+                    "bookId": %d,
+                    "author": "Ivan",
+                    "text": "Great book for daily software refactoring!"
+                }
+                """, book.getId());
+
+        mockMvc.perform(post("/comments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(commentJson))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(201))
+                .andExpect(jsonPath("$.bookId").value(book.getId()))
+                .andExpect(jsonPath("$.author").value("Ivan"))
+                .andExpect(jsonPath("$.text").value("Great book for daily software refactoring!"));
+
+        // Перевіряємо, що коментар з'явився при GET /books/{id}
+        mockMvc.perform(get("/books/" + book.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comments[0].author").value("Ivan"));
+    }
+
+    @Test
+    @DisplayName("Spring MVC: POST /comments валідує порожні поля та некоректний bookId")
+    void testPostCommentValidation() throws Exception {
+        // Некоректний bookId
+        String invalidBookIdJson = """
+                {
+                    "bookId": -1,
+                    "author": "Ivan",
+                    "text": "Valid text"
+                }
+                """;
+        mockMvc.perform(post("/comments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidBookIdJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        // Порожній автор
+        String emptyAuthorJson = """
+                {
+                    "bookId": 1,
+                    "author": "  ",
+                    "text": "Valid text"
+                }
+                """;
+        mockMvc.perform(post("/comments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(emptyAuthorJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        // Порожній текст
+        String emptyTextJson = """
+                {
+                    "bookId": 1,
+                    "author": "Ivan",
+                    "text": "   "
+                }
+                """;
+        mockMvc.perform(post("/comments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(emptyTextJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("REST API: повний життєвий цикл книги та коментарів через /api/books")
     void testBookAndCommentsRestEndpoints() throws Exception {
         // 1. Створення нової книги (POST /api/books -> 201)
         String newBookJson = """
