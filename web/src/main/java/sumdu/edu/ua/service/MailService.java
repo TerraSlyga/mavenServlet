@@ -71,4 +71,25 @@ public class MailService {
             throw new RuntimeException("Email sending failed", e);
         }
     }
+
+    public void sendConfirmationEmail(String toEmail, String username, String confirmationCode) {
+        log.info("Підготовка e-mail підтвердження реєстрації для '{}', код: {}", username, confirmationCode);
+        String confirmationUrl = "http://localhost:8080/confirm?code=" + confirmationCode;
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+
+            String recipient = (toEmail != null && toEmail.contains("@")) ? toEmail : "user@example.com";
+            helper.setTo(recipient);
+            helper.setSubject("Підтвердження реєстрації акаунту");
+            helper.setText("Привіт, " + username + "!\n\nДля завершення реєстрації перейдіть за посиланням:\n"
+                    + confirmationUrl + "\n\nЯкщо ви не реєструвалися, проігноруйте цей лист.", false);
+            helper.setFrom("bookapp@erlkonig.sumdu.edu.ua");
+
+            mailSender.send(message);
+            log.info("E-mail підтвердження надіслано на адресу: {}", recipient);
+        } catch (Exception e) {
+            log.warn("Не вдалося надіслати e-mail підтвердження: {}", e.getMessage());
+        }
+    }
 }

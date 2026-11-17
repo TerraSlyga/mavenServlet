@@ -28,6 +28,12 @@ public class UserEntity {
     @Column(nullable = false, length = 64)
     private String role;
 
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    @Column(name = "confirmation_code", length = 64)
+    private String confirmationCode;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonManagedReference("user-comments")
     private List<CommentEntity> comments = new ArrayList<>();
@@ -39,6 +45,7 @@ public class UserEntity {
         this.username = username;
         this.password = password;
         this.role = role;
+        this.enabled = true;
     }
 
     public UserEntity(Long id, String username, String password, String role) {
@@ -46,6 +53,7 @@ public class UserEntity {
         this.username = username;
         this.password = password;
         this.role = role;
+        this.enabled = true;
     }
 
     public Long getId() {
@@ -78,6 +86,22 @@ public class UserEntity {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public String getConfirmationCode() {
+        return confirmationCode;
+    }
+
+    public void setConfirmationCode(String confirmationCode) {
+        this.confirmationCode = confirmationCode;
     }
 
     public List<CommentEntity> getComments() {
@@ -118,6 +142,7 @@ public class UserEntity {
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", role='" + role + '\'' +
+                ", enabled=" + enabled +
                 '}';
     }
 }

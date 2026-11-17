@@ -3,6 +3,7 @@ package sumdu.edu.ua.core.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sumdu.edu.ua.core.domain.Comment;
@@ -60,6 +61,7 @@ public class CommentService {
         return commentRepository.findAll();
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
     public CommentEntity save(CommentEntity comment) {
         if (comment == null) {
@@ -68,6 +70,7 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
     public CommentEntity addComment(long bookId, String author, String text) {
         validateComment(bookId, author, text);
@@ -84,6 +87,7 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Transactional
     public CommentEntity addComment(Long bookId, Long userId, String text) {
         if (bookId == null || bookId <= 0) {
@@ -138,6 +142,7 @@ public class CommentService {
         return new Page<>(domainComments, request, entityPage.getTotalElements());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void delete(long bookId, long commentId) {
         if (bookId <= 0) {
@@ -152,6 +157,7 @@ public class CommentService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void delete(Long id) {
         if (id == null || id <= 0) {
@@ -160,6 +166,7 @@ public class CommentService {
         commentRepository.deleteById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void delete(long bookId, long commentId, Instant createdAt) {
         delete(bookId, commentId);

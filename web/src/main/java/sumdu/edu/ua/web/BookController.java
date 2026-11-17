@@ -113,6 +113,19 @@ public class BookController {
     }
 
     /**
+     * Видалення книги за ID через веб-форму.
+     * Маршрут: POST /books/{id}/delete
+     */
+    @PostMapping("/books/{id}/delete")
+    public String deleteBook(@PathVariable("id") long id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Book ID must be greater than 0");
+        }
+        bookService.delete(id);
+        return "redirect:/books";
+    }
+
+    /**
      * Повертає дані однієї книги з коментарями у форматі JSON.
      * Маршрут: GET /books/{id}
      */
@@ -200,5 +213,23 @@ public class BookController {
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(savedBook);
+    }
+
+    /**
+     * Видалення книги через REST API.
+     * Маршрут: DELETE /api/books/{id}
+     */
+    @DeleteMapping("/api/books/{id}")
+    @ResponseBody
+    public ResponseEntity<?> deleteBookApi(@PathVariable("id") long id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Book ID must be greater than 0");
+        }
+        bookService.delete(id);
+        return ResponseEntity.ok(Map.of(
+                "status", HttpStatus.OK.value(),
+                "message", "Book deleted successfully",
+                "id", id
+        ));
     }
 }

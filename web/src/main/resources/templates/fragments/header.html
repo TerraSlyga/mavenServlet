@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Header Fragment</title>
@@ -9,9 +10,23 @@
         <div class="header-container">
             <h1 class="brand" th:text="#{app.title}">Каталог книг</h1>
             <nav class="nav-links">
-                <a th:href="@{/books}" th:text="#{nav.books}">Список книг</a> |
-                <a th:href="@{/books/add}" th:text="#{nav.add}">Додати книгу</a>
+                <a th:href="@{/books}" th:text="#{nav.books}">Список книг</a>
+                <span sec:authorize="hasRole('ADMIN')"> | <a th:href="@{/books/add}" th:text="#{nav.add}">Додати книгу</a></span>
             </nav>
+            <div class="user-panel">
+                <!-- Відображається для авторизованих користувачів -->
+                <div sec:authorize="isAuthenticated()" class="auth-section" style="display: inline-block;">
+                    <span>Вітаємо, <strong sec:authentication="name" th:text="${#authentication.name}">Користувач</strong>!</span>
+                    <form th:action="@{/logout}" method="post" style="display: inline; margin-left: 10px;">
+                        <button type="submit" class="btn-logout" id="logout-button" style="padding: 4px 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Вийти</button>
+                    </form>
+                </div>
+                <!-- Відображається для гостей -->
+                <div sec:authorize="!isAuthenticated()" class="guest-section" style="display: inline-block;">
+                    <a th:href="@{/login}">Увійти</a> |
+                    <a th:href="@{/register}">Реєстрація</a>
+                </div>
+            </div>
             <div class="lang-switcher">
                 <span th:text="#{nav.lang}">Мова:</span>
                 <a href="?lang=uk" th:text="#{nav.lang.uk}">Українська</a> |

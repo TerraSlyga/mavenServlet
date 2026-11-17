@@ -13,6 +13,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import sumdu.edu.ua.config.AppConfig;
 import sumdu.edu.ua.config.AppInfoComponent;
@@ -37,11 +38,13 @@ import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser(username = "admin", roles = {"ADMIN"})
 class BookApplicationTests {
 
     @Autowired
@@ -197,6 +200,7 @@ class BookApplicationTests {
     @DisplayName("Thymeleaf MVC: POST /books/add успішно створює книгу, надсилає e-mail та перенаправляє на /books")
     void testAddBookFormPostRedirects() throws Exception {
         mockMvc.perform(post("/books/add")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("title", "Clean Architecture Thymeleaf")
                         .param("author", "Robert Martin")

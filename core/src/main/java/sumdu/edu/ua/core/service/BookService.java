@@ -3,6 +3,7 @@ package sumdu.edu.ua.core.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sumdu.edu.ua.core.domain.Book;
@@ -42,6 +43,7 @@ public class BookService {
         return new Book(entity.getId(), entity.getTitle(), entity.getAuthor(), entity.getYear());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public BookEntity save(BookEntity book) {
         if (book == null) {
@@ -51,6 +53,7 @@ public class BookService {
         return bookRepository.save(book);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void delete(Long id) {
         if (id == null || id <= 0) {
@@ -59,6 +62,7 @@ public class BookService {
         bookRepository.deleteById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public Book add(String title, String author, int pubYear) {
         validateBook(title, author, pubYear);
@@ -67,6 +71,7 @@ public class BookService {
         return new Book(saved.getId(), saved.getTitle(), saved.getAuthor(), saved.getYear());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public BookEntity addEntity(String title, String author, int pubYear) {
         validateBook(title, author, pubYear);
