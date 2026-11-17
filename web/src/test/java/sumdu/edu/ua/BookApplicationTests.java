@@ -1,17 +1,23 @@
 package sumdu.edu.ua;
 
+import jakarta.mail.internet.MimeMessage;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.test.web.servlet.MockMvc;
 import sumdu.edu.ua.config.AppConfig;
 import sumdu.edu.ua.config.AppInfoComponent;
 import sumdu.edu.ua.config.CustomInfoService;
+import sumdu.edu.ua.config.EmailFreemarkerConfig;
 import sumdu.edu.ua.config.WebConfig;
 import sumdu.edu.ua.core.port.CatalogRepositoryPort;
 import sumdu.edu.ua.core.port.CommentRepositoryPort;
@@ -20,6 +26,8 @@ import sumdu.edu.ua.core.service.CommentService;
 import sumdu.edu.ua.persistence.jdbc.DatabaseInitializer;
 import sumdu.edu.ua.persistence.jdbc.JdbcBookRepository;
 import sumdu.edu.ua.persistence.jdbc.JdbcCommentRepository;
+import sumdu.edu.ua.service.EmailTemplateProcessor;
+import sumdu.edu.ua.service.MailService;
 import sumdu.edu.ua.web.BookController;
 import sumdu.edu.ua.web.CommentController;
 import sumdu.edu.ua.web.RootController;
@@ -27,6 +35,8 @@ import sumdu.edu.ua.web.RootController;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -52,6 +62,14 @@ class BookApplicationTests {
     @Autowired
     private AppInfoComponent appInfoComponent;
 
+    @MockBean
+    private JavaMailSender mailSender;
+
+    @BeforeEach
+    void setUpMailSender() {
+        when(mailSender.createMimeMessage()).thenReturn(new JavaMailSenderImpl().createMimeMessage());
+    }
+
     @Test
     @DisplayName("Перевірка завантаження контексту та наявності всіх типів бінів (@Component, @Service, @Repository, @Configuration, @Bean)")
     void contextLoadsAndAllBeansPresent() {
@@ -60,8 +78,10 @@ class BookApplicationTests {
         // 1. @Service біни
         assertTrue(context.containsBean("bookService"), "BookService (@Service) повинен бути в контексті");
         assertTrue(context.containsBean("commentService"), "CommentService (@Service) повинен бути в контексті");
+        assertTrue(context.containsBean("mailService"), "MailService (@Service) повинен бути в контексті");
         assertNotNull(context.getBean(BookService.class));
         assertNotNull(context.getBean(CommentService.class));
+        assertNotNull(context.getBean(MailService.class));
 
         // 2. @Repository біни
         assertTrue(context.containsBean("jdbcBookRepository"), "JdbcBookRepository (@Repository) повинен бути в контексті");
@@ -72,14 +92,18 @@ class BookApplicationTests {
         // 3. @Component біни
         assertTrue(context.containsBean("databaseInitializer"), "DatabaseInitializer (@Component) повинен бути в контексті");
         assertTrue(context.containsBean("appInfoComponent"), "AppInfoComponent (@Component) повинен бути в контексті");
+        assertTrue(context.containsBean("emailTemplateProcessor"), "EmailTemplateProcessor (@Component) повинен бути в контексті");
         assertNotNull(context.getBean(DatabaseInitializer.class));
         assertNotNull(context.getBean(AppInfoComponent.class));
+        assertNotNull(context.getBean(EmailTemplateProcessor.class));
 
         // 4. @Configuration класи
         assertTrue(context.containsBean("appConfig"), "AppConfig (@Configuration) повинен бути в контексті");
         assertTrue(context.containsBean("webConfig"), "WebConfig (@Configuration, @EnableWebMvc) повинен бути в контексті");
+        assertTrue(context.containsBean("emailFreemarkerConfig"), "EmailFreemarkerConfig (@Configuration) повинен бути в контексті");
         assertNotNull(context.getBean(AppConfig.class));
         assertNotNull(context.getBean(WebConfig.class));
+        assertNotNull(context.getBean(EmailFreemarkerConfig.class));
 
         // 5. Кастомний @Bean
         assertTrue(context.containsBean("customInfoService"), "CustomInfoService (кастомний @Bean) повинен бути в контексті");
@@ -155,7 +179,7 @@ class BookApplicationTests {
     }
 
     @Test
-    @DisplayName("Thymeleaf MVC: POST /books/add успішно створює книгу та перенаправляє на /books")
+    @DisplayName("Thymeleaf MVC: POST /books/add успішно створює книгу, надсилає e-mail та перенаправляє на /books")
     void testAddBookFormPostRedirects() throws Exception {
         mockMvc.perform(post("/books/add")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -168,6 +192,7 @@ class BookApplicationTests {
         var searchResult = bookService.search("Clean Architecture Thymeleaf", new sumdu.edu.ua.core.domain.PageRequest(0, 10));
         assertFalse(searchResult.getItems().isEmpty());
         assertEquals("Robert Martin", searchResult.getItems().get(0).getAuthor());
+        verify(mailSender, atLeastOnce()).send(any(MimeMessage.class));
     }
 
     @Test

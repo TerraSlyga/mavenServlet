@@ -50,6 +50,14 @@ public class Book {
         this.pubYear = pubYear;
     }
 
+    public int getYear() {
+        return pubYear;
+    }
+
+    public void setYear(int year) {
+        this.pubYear = year;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

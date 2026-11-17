@@ -14,6 +14,7 @@ import sumdu.edu.ua.core.domain.Page;
 import sumdu.edu.ua.core.domain.PageRequest;
 import sumdu.edu.ua.core.service.BookService;
 import sumdu.edu.ua.core.service.CommentService;
+import sumdu.edu.ua.service.MailService;
 import sumdu.edu.ua.web.dto.BookWithCommentsDto;
 
 import java.util.Map;
@@ -28,6 +29,7 @@ public class BookController {
 
     private final BookService bookService;
     private final CommentService commentService;
+    private final MailService mailService;
     private final int defaultPageSize;
     private final int maxPageSize;
 
@@ -37,10 +39,12 @@ public class BookController {
     public BookController(
             BookService bookService,
             CommentService commentService,
+            MailService mailService,
             @Value("${app.default-page-size:10}") int defaultPageSize,
             @Value("${app.max-page-size:100}") int maxPageSize) {
         this.bookService = bookService;
         this.commentService = commentService;
+        this.mailService = mailService;
         this.defaultPageSize = defaultPageSize;
         this.maxPageSize = maxPageSize;
     }
@@ -94,7 +98,8 @@ public class BookController {
             throw new IllegalArgumentException("Field 'pubYear' cannot be negative");
         }
 
-        bookService.add(book.getTitle().trim(), book.getAuthor().trim(), book.getPubYear());
+        Book savedBook = bookService.add(book.getTitle().trim(), book.getAuthor().trim(), book.getPubYear());
+        mailService.sendNewBookEmail(savedBook != null ? savedBook : book);
         return "redirect:/books";
     }
 
