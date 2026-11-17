@@ -5,12 +5,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sumdu.edu.ua.core.domain.Book;
 import sumdu.edu.ua.core.domain.Comment;
 import sumdu.edu.ua.core.domain.Page;
 import sumdu.edu.ua.core.domain.PageRequest;
 import sumdu.edu.ua.core.service.BookService;
 import sumdu.edu.ua.core.service.CommentService;
+import sumdu.edu.ua.persistence.entity.BookEntity;
 import sumdu.edu.ua.web.dto.CreateCommentRequest;
 
 import java.util.Map;
@@ -84,7 +84,7 @@ public class CommentController {
             @RequestParam(name = "size", defaultValue = "20") int size,
             @RequestParam(name = "author", required = false) String author) {
 
-        Book book = bookService.findById(bookId);
+        BookEntity book = bookService.findById(bookId);
         if (book == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", HttpStatus.NOT_FOUND.value(),
@@ -116,7 +116,7 @@ public class CommentController {
     }
 
     private ResponseEntity<?> processAddComment(long bookId, String author, String text) {
-        Book book = bookService.findById(bookId);
+        BookEntity book = bookService.findById(bookId);
         if (book == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", HttpStatus.NOT_FOUND.value(),

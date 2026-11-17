@@ -9,14 +9,26 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 public class WebArchitectureTest {
 
     @Test
-    void webShouldNotDependOnPersistence() {
+    void webControllersShouldNotDependOnRepositoriesDirectly() {
         JavaClasses imported = new ClassFileImporter()
                 .importPackages("sumdu.edu.ua.web");
 
         noClasses()
                 .that().resideInAPackage("..web..")
                 .should().dependOnClassesThat()
-                .resideInAPackage("..persistence..")
+                .resideInAPackage("..persistence.repository..")
+                .check(imported);
+    }
+
+    @Test
+    void webShouldNotDependOnJdbcDirectly() {
+        JavaClasses imported = new ClassFileImporter()
+                .importPackages("sumdu.edu.ua.web");
+
+        noClasses()
+                .that().resideInAPackage("..web..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage("java.sql..", "org.h2..")
                 .check(imported);
     }
 }

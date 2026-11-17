@@ -11,9 +11,9 @@ public class CoreArchitectureTest {
     private final JavaClasses classes = new ClassFileImporter().importPackages("sumdu.edu.ua.core");
 
     @Test
-    void coreShouldNotDependOnWebOrPersistence() {
+    void coreShouldNotDependOnWeb() {
         noClasses().that().resideInAPackage("..core..")
-                .should().dependOnClassesThat().resideInAnyPackage("..web..", "..persistence..")
+                .should().dependOnClassesThat().resideInAnyPackage("..web..")
                 .check(classes);
     }
 

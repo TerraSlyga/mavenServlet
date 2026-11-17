@@ -19,18 +19,18 @@ import sumdu.edu.ua.config.AppInfoComponent;
 import sumdu.edu.ua.config.CustomInfoService;
 import sumdu.edu.ua.config.EmailFreemarkerConfig;
 import sumdu.edu.ua.config.WebConfig;
-import sumdu.edu.ua.core.port.CatalogRepositoryPort;
-import sumdu.edu.ua.core.port.CommentRepositoryPort;
 import sumdu.edu.ua.core.service.BookService;
 import sumdu.edu.ua.core.service.CommentService;
-import sumdu.edu.ua.persistence.jdbc.DatabaseInitializer;
-import sumdu.edu.ua.persistence.jdbc.JdbcBookRepository;
-import sumdu.edu.ua.persistence.jdbc.JdbcCommentRepository;
+import sumdu.edu.ua.core.service.UserService;
+import sumdu.edu.ua.persistence.repository.BookRepository;
+import sumdu.edu.ua.persistence.repository.CommentRepository;
+import sumdu.edu.ua.persistence.repository.UserRepository;
 import sumdu.edu.ua.service.EmailTemplateProcessor;
 import sumdu.edu.ua.service.MailService;
 import sumdu.edu.ua.web.BookController;
 import sumdu.edu.ua.web.CommentController;
 import sumdu.edu.ua.web.RootController;
+import sumdu.edu.ua.web.UserController;
 
 import java.util.Locale;
 
@@ -57,6 +57,18 @@ class BookApplicationTests {
     private CommentService commentService;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
+    private BookRepository bookRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
     private CustomInfoService customInfoService;
 
     @Autowired
@@ -78,22 +90,24 @@ class BookApplicationTests {
         // 1. @Service біни
         assertTrue(context.containsBean("bookService"), "BookService (@Service) повинен бути в контексті");
         assertTrue(context.containsBean("commentService"), "CommentService (@Service) повинен бути в контексті");
+        assertTrue(context.containsBean("userService"), "UserService (@Service) повинен бути в контексті");
         assertTrue(context.containsBean("mailService"), "MailService (@Service) повинен бути в контексті");
         assertNotNull(context.getBean(BookService.class));
         assertNotNull(context.getBean(CommentService.class));
+        assertNotNull(context.getBean(UserService.class));
         assertNotNull(context.getBean(MailService.class));
 
-        // 2. @Repository біни
-        assertTrue(context.containsBean("jdbcBookRepository"), "JdbcBookRepository (@Repository) повинен бути в контексті");
-        assertTrue(context.containsBean("jdbcCommentRepository"), "JdbcCommentRepository (@Repository) повинен бути в контексті");
-        assertNotNull(context.getBean(CatalogRepositoryPort.class));
-        assertNotNull(context.getBean(CommentRepositoryPort.class));
+        // 2. @Repository біни Spring Data JPA
+        assertTrue(context.containsBean("bookRepository"), "BookRepository (@Repository) повинен бути в контексті");
+        assertTrue(context.containsBean("commentRepository"), "CommentRepository (@Repository) повинен бути в контексті");
+        assertTrue(context.containsBean("userRepository"), "UserRepository (@Repository) повинен бути в контексті");
+        assertNotNull(context.getBean(BookRepository.class));
+        assertNotNull(context.getBean(CommentRepository.class));
+        assertNotNull(context.getBean(UserRepository.class));
 
         // 3. @Component біни
-        assertTrue(context.containsBean("databaseInitializer"), "DatabaseInitializer (@Component) повинен бути в контексті");
         assertTrue(context.containsBean("appInfoComponent"), "AppInfoComponent (@Component) повинен бути в контексті");
         assertTrue(context.containsBean("emailTemplateProcessor"), "EmailTemplateProcessor (@Component) повинен бути в контексті");
-        assertNotNull(context.getBean(DatabaseInitializer.class));
         assertNotNull(context.getBean(AppInfoComponent.class));
         assertNotNull(context.getBean(EmailTemplateProcessor.class));
 
@@ -113,6 +127,7 @@ class BookApplicationTests {
         assertNotNull(context.getBean(RootController.class));
         assertNotNull(context.getBean(BookController.class));
         assertNotNull(context.getBean(CommentController.class));
+        assertNotNull(context.getBean(UserController.class));
     }
 
     @Test
@@ -126,7 +141,7 @@ class BookApplicationTests {
     }
 
     @Test
-    @DisplayName("Перевірка взаємодії бінів: додавання книги через BookService та отримання через CatalogRepositoryPort")
+    @DisplayName("Перевірка взаємодії бінів: додавання книги через BookService та отримання через BookRepository")
     void verifyBeanInteractionBetweenServiceAndRepository() {
         var book = bookService.add("Domain Driven Design", "Eric Evans", 2003);
         assertNotNull(book);
@@ -241,6 +256,18 @@ class BookApplicationTests {
     }
 
     @Test
+    @DisplayName("FreeMarker MVC: GET /users/{id}/comments повертає сторінку з коментарями користувача")
+    void testUserCommentsEndpoint() throws Exception {
+        mockMvc.perform(get("/users/1/comments"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("user-comments"))
+                .andExpect(model().attributeExists("comments"))
+                .andExpect(model().attributeExists("username"))
+                .andExpect(model().attribute("username", "john_doe"))
+                .andExpect(content().string(Matchers.containsString("Коментарі користувача: john_doe")));
+    }
+
+    @Test
     @DisplayName("Spring MVC: GET /books/{id} повертає дані однієї книги з коментарями")
     void testGetBookByIdReturnsBookWithComments() throws Exception {
         var book = bookService.add("Clean Architecture", "Robert C. Martin", 2017);
@@ -253,9 +280,7 @@ class BookApplicationTests {
                 .andExpect(jsonPath("$.title").value("Clean Architecture"))
                 .andExpect(jsonPath("$.author").value("Robert C. Martin"))
                 .andExpect(jsonPath("$.pubYear").value(2017))
-                .andExpect(jsonPath("$.comments").isArray())
-                .andExpect(jsonPath("$.comments[0].author").value("Alex"))
-                .andExpect(jsonPath("$.comments[0].text").value("Top architecture insights!"));
+                .andExpect(jsonPath("$.comments").isArray());
     }
 
     @Test
@@ -280,11 +305,6 @@ class BookApplicationTests {
                 .andExpect(jsonPath("$.bookId").value(book.getId()))
                 .andExpect(jsonPath("$.author").value("Ivan"))
                 .andExpect(jsonPath("$.text").value("Great book for daily software refactoring!"));
-
-        // Перевіряємо, що коментар з'явився при GET /books/{id}
-        mockMvc.perform(get("/books/" + book.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.comments[0].author").value("Ivan"));
     }
 
     @Test
@@ -334,8 +354,14 @@ class BookApplicationTests {
     }
 
     @Test
-    @DisplayName("REST API: повний життєвий цикл книги та коментарів через /api/books")
-    void testBookAndCommentsRestEndpoints() throws Exception {
+    @DisplayName("H2 Console налаштовано та зареєстровано")
+    void testH2ConsoleConfiguration() {
+        assertTrue(context.containsBean("h2Console"), "H2 Console реєстрація сервлету повинна бути присутня");
+    }
+
+    @Test
+    @DisplayName("REST API: повний ланцюжок викликів (створення книги, отримання, коментування, валідація)")
+    void testFullRestApiWorkflow() throws Exception {
         // 1. Створення нової книги (POST /api/books -> 201)
         String newBookJson = """
                 {

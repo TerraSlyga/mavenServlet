@@ -11,10 +11,13 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
+import org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver;
 
 /**
  * Spring MVC конфігурація з активацією анотаційного режиму MVC (@EnableWebMvc).
- * Відповідає за реєстрацію компонентів, налаштування локалізації (i18n) та контролерів.
+ * Відповідає за реєстрацію компонентів, налаштування локалізації (i18n), контролерів
+ * та перетворювачів представлень (Thymeleaf / FreeMarker).
  */
 @Configuration
 @EnableWebMvc
@@ -45,5 +48,24 @@ public class WebConfig implements WebMvcConfigurer {
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setFallbackToSystemLocale(false);
         return messageSource;
+    }
+
+    @Bean
+    public FreeMarkerConfigurer freeMarkerConfigurer() {
+        FreeMarkerConfigurer configurer = new FreeMarkerConfigurer();
+        configurer.setTemplateLoaderPath("classpath:/templates/");
+        configurer.setDefaultEncoding("UTF-8");
+        return configurer;
+    }
+
+    @Bean
+    public FreeMarkerViewResolver freeMarkerViewResolver() {
+        FreeMarkerViewResolver resolver = new FreeMarkerViewResolver();
+        resolver.setPrefix("");
+        resolver.setSuffix(".ftl");
+        resolver.setContentType("text/html;charset=UTF-8");
+        resolver.setViewNames("user-comments*", "*.ftl");
+        resolver.setOrder(1);
+        return resolver;
     }
 }

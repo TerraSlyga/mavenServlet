@@ -14,6 +14,7 @@ import sumdu.edu.ua.core.domain.Page;
 import sumdu.edu.ua.core.domain.PageRequest;
 import sumdu.edu.ua.core.service.BookService;
 import sumdu.edu.ua.core.service.CommentService;
+import sumdu.edu.ua.persistence.entity.BookEntity;
 import sumdu.edu.ua.service.MailService;
 import sumdu.edu.ua.web.dto.BookWithCommentsDto;
 
@@ -122,7 +123,7 @@ public class BookController {
             throw new IllegalArgumentException("Book ID must be greater than 0");
         }
 
-        Book book = bookService.findById(id);
+        BookEntity book = bookService.findById(id);
         if (book == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", HttpStatus.NOT_FOUND.value(),
@@ -170,7 +171,7 @@ public class BookController {
             throw new IllegalArgumentException("Book ID must be greater than 0");
         }
 
-        Book book = bookService.findById(id);
+        BookEntity book = bookService.findById(id);
         if (book == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", HttpStatus.NOT_FOUND.value(),
@@ -192,7 +193,7 @@ public class BookController {
             throw new IllegalArgumentException("Request body cannot be null");
         }
 
-        Book savedBook = bookService.add(
+        BookEntity savedBook = bookService.addEntity(
                 request.title(),
                 request.author(),
                 request.pubYear()

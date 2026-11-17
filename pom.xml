@@ -10,8 +10,8 @@
     <name>maven-servlet-parent</name>
 
     <modules>
-        <module>core</module>
         <module>persistence</module>
+        <module>core</module>
         <module>web</module>
     </modules>
 

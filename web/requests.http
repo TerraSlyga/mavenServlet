@@ -1,78 +1,66 @@
-### 1. Перевірка кореневого ендпоінту
-GET http://localhost:8080/
+### ==============================================================================
+### Лабораторна робота 8: JPA / Hibernate, Spring Data JPA, Flyway, зв'язки сутностей
+### ==============================================================================
 
-### 2. Відображення списку книг через Thymeleaf (HTML-сторінка, типова мова)
+### 1. Перегляд коментарів конкретного користувача (GET /users/{id}/comments)
+### FreeMarker сторінка user-comments з виведенням дати, тексту та посилання на книгу
+GET http://localhost:8080/users/1/comments
+
+### 2. Перегляд коментарів іншого користувача (User #2 - jane_smith)
+GET http://localhost:8080/users/2/comments
+
+### 3. Доступ до H2 Web Console (таблиці books, users, comments та зв'язки)
+### JDBC URL: jdbc:h2:file:./data/guest;AUTO_SERVER=TRUE;NON_KEYWORDS=YEAR
+### User: sa, Password: (empty)
+GET http://localhost:8080/h2-console
+
+### 4. Відображення списку книг (Thymeleaf /books)
 GET http://localhost:8080/books
 
-### 3. Відображення списку книг англійською мовою (параметр ?lang=en)
-GET http://localhost:8080/books?lang=en
+### 5. Отримання книги з усіма коментарями (GET /books/{id})
+GET http://localhost:8080/books/1
 
-### 4. Відображення списку книг через заголовок Accept-Language: en
-GET http://localhost:8080/books
-Accept-Language: en
+### 6. Додавання коментаря через REST
+POST http://localhost:8080/comments
+Content-Type: application/json
 
-### 5. Відображення форми додавання книги (/books/add)
+{
+  "bookId": 1,
+  "author": "john_doe",
+  "text": "Чудове перевидання класики!"
+}
+
+### ==============================================================================
+### Попередні ендпоінти застосунку (Thymeleaf, REST API, e-mail)
+### ==============================================================================
+
+### 7. Перевірка форми додавання книги (GET /books/add)
 GET http://localhost:8080/books/add
 
-### 6. Відображення форми додавання книги англійською мовою (/books/add?lang=en)
-GET http://localhost:8080/books/add?lang=en
-
-### 7. Додавання книги через HTML-форму (application/x-www-form-urlencoded)
+### 8. Додавання книги через HTML форму (POST /books/add)
 POST http://localhost:8080/books/add
 Content-Type: application/x-www-form-urlencoded
 
-title=Domain-Driven+Design&author=Eric+Evans&pubYear=2003
+title=Spring+in+Action&author=Craig+Walls&pubYear=2022
 
-### 8. Перевірка умовного повідомлення "Немає книг" (th:if при відсутності результатів)
-GET http://localhost:8080/books?q=NonExistentBookQueryXYZ123
+### 9. Перевірка кореневого ендпоінту
+GET http://localhost:8080/
 
-### 9. Відкриття /books/{id} - повертає дані книги з коментарями (JSON)
-GET http://localhost:8080/books/1
+### 10. Отримання списку книг через REST API
+GET http://localhost:8080/api/books?page=0&size=10
 
-### 10. Відправлення POST-запиту /comments - додає новий відгук (JSON)
-POST http://localhost:8080/comments
-Content-Type: application/json
-
-{
-  "bookId": 1,
-  "author": "Ivan",
-  "text": "Чудова книга для початківців та спеціалістів!"
-}
-
-### 11. Відправлення POST-запиту /comments з помилкою валідації (порожні поля)
-POST http://localhost:8080/comments
-Content-Type: application/json
-
-{
-  "bookId": 1,
-  "author": "",
-  "text": " "
-}
-
-### 12. Створення нової книги через JSON REST API
+### 11. Створення нової книги через JSON REST API
 POST http://localhost:8080/api/books
 Content-Type: application/json
 
 {
-  "title": "Clean Code",
+  "title": "Clean Architecture",
   "author": "Robert C. Martin",
-  "pubYear": 2008
+  "pubYear": 2017
 }
 
-### 13. Отримання списку книг з пагінацією та пошуком (REST API)
-GET http://localhost:8080/api/books?page=0&size=10&q=Clean
+### 12. Отримання коментарів до книги через REST API
+GET http://localhost:8080/api/books/1/comments
 
-### 14. Отримання коментарів до книги через REST API
-GET http://localhost:8080/api/books/1/comments?page=0&size=5
-
-### 15. Додавання коментаря через REST ендпоінт
-POST http://localhost:8080/api/books/1/comments
-Content-Type: application/json
-
-{
-  "author": "Taras",
-  "text": "Обов'язково до прочитання кожному розробнику!"
-}
-
-### 16. Видалення коментаря за id
+### 13. Видалення коментаря за id
 DELETE http://localhost:8080/api/books/1/comments/1

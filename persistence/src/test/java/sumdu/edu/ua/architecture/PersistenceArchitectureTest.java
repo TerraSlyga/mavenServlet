@@ -19,6 +19,13 @@ public class PersistenceArchitectureTest {
     }
 
     @Test
+    void persistenceShouldNotDependOnCore() {
+        noClasses().that().resideInAPackage("..persistence..")
+                .should().dependOnClassesThat().resideInAnyPackage("..core..")
+                .check(classes);
+    }
+
+    @Test
     void repositoryImplementationsShouldHaveProperNaming() {
         classes().that().resideInAPackage("..persistence..")
                 .and().haveSimpleNameEndingWith("RepositoryImpl")
